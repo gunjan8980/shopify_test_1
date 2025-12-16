@@ -1,0 +1,155 @@
+{% if section.settings.selected_blog %}
+  {% assign blog = blogs[section.settings.selected_blog] %}
+
+  {% if blog.articles.size > 0 %}
+    {% comment %} Collect all unique tags from blog posts {% endcomment %}
+    {% assign all_tags = "" %}
+    {% for article in blog.articles %}
+      {% for tag in article.tags %}
+        {% unless all_tags contains tag %}
+          {% assign all_tags = all_tags | append: tag | append: "," %}
+        {% endunless %}
+      {% endfor %}
+    {% endfor %}
+    {% assign tags_array = all_tags | split: "," | uniq %}
+
+    <div class="blog-tabs-wrapper" data-section-id="{{ section.id }}">
+      <!-- Tabs -->
+      <div class="blog-tabs">
+        <button class="tab active" data-tag="all">All</button>
+        {% for tag in tags_array %}
+          {% if tag != blank %}
+            <button class="tab" data-tag="{{ tag | escape }}">{{ tag }}</button>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <!-- Blog posts container -->
+      <div class="blog-posts">
+        {% for article in blog.articles %}
+          <div class="blog-card" data-tags="{{ article.tags | join: ',' }}">
+            <a href="{{ article.url }}">
+              {% if article.image %}
+                <img src="{{ article.image | img_url: '400x250' }}" alt="{{ article.title }}">
+              {% endif %}
+              <h3>{{ article.title }}</h3>
+              <p>{{ article.excerpt | strip_html | truncate: 100 }}</p>
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+
+      {% comment %} <!-- Pagination (basic) -->
+      {% paginate blog.articles by section.settings.posts_per_page %}
+        <div class="pagination">
+          {% if paginate.previous %}
+            <a href="{{ paginate.previous.url }}">Previous</a>
+          {% endif %}
+          {% for part in paginate.parts %}
+            {% if part.is_link %}
+              <a href="{{ part.url }}">{{ part.title }}</a>
+            {% else %}
+              <span class="{% if part.title == paginate.current_page %}active{% endif %}">
+                {{ part.title }}
+              </span>
+            {% endif %}
+          {% endfor %}
+          {% if paginate.next %}
+            <a href="{{ paginate.next.url }}">Next</a>
+          {% endif %}
+        </div>
+      {% endpaginate %} {% endcomment %}
+    </div>
+  {% else %}
+    <p>No articles found.</p>
+  {% endif %}
+{% else %}
+  <p>Please select a blog in the customizer.</p>
+{% endif %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".blog-tabs-wrapper").forEach((wrapper) => {
+    const tabs = wrapper.querySelectorAll(".tab");
+    const posts = wrapper.querySelectorAll(".blog-card");
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        // Remove active from all tabs
+        tabs.forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+
+        const tag = tab.getAttribute("data-tag");
+
+        posts.forEach((post) => {
+          const postTags = post.getAttribute("data-tags");
+          if (tag === "all" || (postTags && postTags.includes(tag))) {
+            post.style.display = "block";
+          } else {
+            post.style.display = "none";
+          }
+        });
+      });
+    });
+  });
+});
+
+</script>
+
+<style>
+.blog-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.blog-tabs .tab {
+  padding: 8px 14px;
+  border: 1px solid #ddd;
+  background: #f9f9f9;
+  cursor: pointer;
+}
+.blog-tabs .tab.active {
+  background: #000;
+  color: #fff;
+}
+.blog-posts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(250px,1fr));
+  gap: 20px;
+}
+.blog-card {
+  border: 1px solid #eee;
+  padding: 10px;
+}
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+</style>
+
+
+
+{% schema %}
+{
+  "name": "Blog Tabs Section",
+  "settings": [
+    {
+      "type": "blog",
+      "id": "selected_blog",
+      "label": "Select Blog"
+    },
+    {
+      "type": "number",
+      "id": "posts_per_page",
+      "label": "Posts per page",
+      "default": 6
+    }
+  ],
+  "presets": [
+    {
+        "name":"Blog Tabs Section"
+    }
+  ]
+}
+{% endschema %}

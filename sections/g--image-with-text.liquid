@@ -1,0 +1,68 @@
+    
+    <div class="image_with_text">
+        {% if section.settings.image != blank %}
+            <div class="image_with_text_img">
+                <img src="{{ section.settings.image | image_url}}" alt="{{ section.settings.image.alt }}">
+            </div>
+        {% endif %}
+        {% capture content %}{{ section.settings.heading }}{{ section.settings.sub_heading }}{{ section.settings.btn_url }}{% endcapture %}
+        {% if content != blank %}
+            <div class="image_with_text_content">
+                {% if section.settings.heading != blank %}
+                    <div class="image_with_text_head">
+                        <h3>{{ section.settings.heading }}</h3>
+                    </div>
+                {% endif %}
+                {% if section.settings.sub_heading != blank %}
+                    <div class="iwt_subhead">
+                        <p>{{ section.settings.sub_heading }}</p>
+                    </div>
+                {% endif %}
+                {% if section.settings.btn_text != blank %}
+                    <div class="iwt_btn">
+                        <a href="{{ section.settings.btn_url }}">{{ section.settings.btn_text }}</a>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>  
+
+{% schema %}
+  {
+    "name": "Image with text",
+    "settings": [
+        {
+            "type":"image_picker",
+            "id":"image",
+            "label":"Image"
+        },
+        {
+            "type":"text",
+            "id":"heading",
+            "label":"Heading"
+        },
+        {
+            "type":"text",
+            "id":"sub_heading",
+            "label":"Sub Heading"
+        },
+        {
+            "type":"text",
+            "id":"btn_text",
+            "label":"Button text"
+        },
+        {
+            "type":"url",
+            "id":"btn_url",
+            "label":"Button link"
+        }
+
+
+    ],
+    "presets": [
+      {
+        "name": "Image with text"
+      }
+    ]
+  }
+{% endschema %}

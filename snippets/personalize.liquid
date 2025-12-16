@@ -1,0 +1,147 @@
+<style>
+.personalize_prod button {
+  padding: 10px 20px;
+  border: none;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: white;
+  transition: 0.5s;
+}
+
+.personalize_prod #open {
+  background-color: #007bff;
+  margin: 50px;
+}
+
+.personalize_prod #open:hover {
+  background-color: #0062cc;
+}
+
+.personalize_prod #close {
+  background-color: #dc3545;
+  margin: 20px;
+}
+
+.personalize_prod #close:hover {
+  background-color: #b02a37;
+}
+
+.personalize_prod dialog {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-width: 90vw;
+  width: 400px;
+  margin: auto;
+}
+
+.personalize_prod dialog::backdrop {
+  backdrop-filter: blur(4px);
+}
+
+.personalize_prod h2 {
+  font-size: 1.25rem;
+  padding: 15px 20px;
+  border-bottom: 2px solid #eee;
+  margin-bottom: 20px;
+}
+
+.personalize_prod p {
+  padding: 8px 20px;
+}
+#personalize-form .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pers_btn_div span.active {
+  border: 2px solid #000;
+  background: #f2f2f2;
+}
+
+</style>
+
+<div class="personalize_prod">
+    <button id="open">Show Dialog</button>
+
+<div class="personalize_prod">
+  {% assign personalize_product = all_products['personalize'] %}
+
+  {% if personalize_product %}
+    <div class="product-item">
+      <img 
+        src="{{ personalize_product.featured_image | img_url: '600x600' }}" 
+        alt="{{ personalize_product.title | escape }}" 
+        loading="lazy"
+      >
+      <h2 class="product-title">{{ personalize_product.title }}</h2>
+
+      {% if personalize_product.compare_at_price > personalize_product.price %}
+        <p class="product-price">
+          <span class="price-sale">{{ personalize_product.price | money }}</span>
+          <span class="price-compare">{{ personalize_product.compare_at_price | money }}</span>
+        </p>
+      {% else %}
+        <p class="product-price">{{ personalize_product.price | money }}</p>
+      {% endif %}
+
+      {% if personalize_product.description != blank %}
+        <div class="product-description">
+          {{ personalize_product.description }}
+        </div>
+      {% endif %}
+
+      <div class="personalize_input">
+       <input type="text" class="pers_input">
+        <div class="pers_btn_div">
+            <span class="pers_font_1" style="font-family:;"></span>
+            <span class="pers_font_2" style="font-family:;"></span>
+            <span class="pers_font_3" style="font-family:;"></span>
+        </div>
+      </div> 
+
+      <form method="post" action="/cart/add" class="product-form" id="personalize-form">
+        <input type="hidden" name="id" value="{{ personalize_product.selected_or_first_available_variant.id }}">
+          <input type="hidden" name="attributes[personalize_product]" value="true">
+        <button type="submit" class="btn">Add to Cart</button>
+      </form>
+    </div>
+  {% else %}
+    <p>Product not found.</p>
+  {% endif %}
+</div>
+
+ 
+</div>
+
+
+{% comment %} <script>
+const dialog = document.querySelector("dialog");
+const showBtn = document.getElementById("open");
+const closeBtn = document.getElementById("close");
+
+// Show the dialog
+showBtn.addEventListener("click", () => {
+  dialog.showModal();
+});
+
+// Close the dialog
+closeBtn.addEventListener("click", () => {
+  dialog.close();
+});
+
+// Close the dialog if the backdrop is clicked
+dialog.addEventListener("click", (event) => {
+  // Check if the click happened directly on the dialog element
+  const dialogDimensions = dialog.getBoundingClientRect();
+  if (
+    event.clientX < dialogDimensions.left ||
+    event.clientX > dialogDimensions.right ||
+    event.clientY < dialogDimensions.top ||
+    event.clientY > dialogDimensions.bottom
+  ) {
+    dialog.close();
+  }
+});
+
+</script> {% endcomment %}

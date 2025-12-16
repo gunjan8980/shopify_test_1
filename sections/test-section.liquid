@@ -1,0 +1,832 @@
+<style>
+  .shopdev .jordan-bundle-builder {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+  }
+  
+  .shopdev .jordan-bundle-builder .category-tab {
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+  }
+  
+  .shopdev .jordan-bundle-builder .category-tab.active {
+    border-bottom: 3px solid #e53e3e;
+    font-weight: bold;
+  }
+  
+  .shopdev .jordan-bundle-builder .product-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+  }
+  
+  .shopdev .jordan-bundle-builder .product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .shopdev .jordan-bundle-builder .product-card.selected {
+    border: 2px solid #e53e3e;
+  }
+  
+  .shopdev .jordan-bundle-builder .limited-edition-badge {
+    background: linear-gradient(135deg, #e53e3e, #9b2c2c);
+  }
+  
+  .shopdev .jordan-bundle-builder .discount-badge {
+    background: linear-gradient(135deg, #2b6cb0, #4299e1);
+  }
+  
+  .shopdev .jordan-bundle-builder .bundle-summary {
+    background: linear-gradient(to right, #f7fafc, #edf2f7);
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  .shopdev .jordan-bundle-builder .pulse-animation {
+    animation: pulse 2s infinite;
+  }
+  
+  @media (max-width: 768px) {
+    .shopdev .jordan-bundle-builder .category-tabs {
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+</style>
+
+<div class="jordan-bundle-builder w-full bg-gray-50 py-12 px-4">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-10">
+      <h2 class="text-4xl font-bold mb-4">{{ section.settings.title }}</h2>
+      <p class="text-gray-600 max-w-3xl mx-auto">{{ section.settings.subtitle }}</p>
+      
+      <!-- Discount Tiers Display -->
+      <div class="flex flex-wrap justify-center gap-4 mt-6">
+        {% for block in section.blocks %}
+          {% if block.type == 'discount_tier' %}
+            <div class="bg-white rounded-lg shadow-md px-6 py-3 flex items-center">
+              <span class="text-gray-800 font-medium">{{ block.settings.tier_description }}</span>
+              <span class="ml-2 bg-red-600 text-white px-2 py-1 rounded-md text-sm font-bold">{{ block.settings.discount_percentage }}% OFF</span>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    
+    <!-- Bundle Builder Interface -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Product Selection Area (2/3 width on desktop) -->
+      <div class="lg:col-span-2">
+        <!-- Category Tabs -->
+        <div class="category-tabs flex border-b border-gray-200 mb-6 overflow-x-auto">
+          <button class="category-tab active px-6 py-3 text-gray-800" data-category="all">All Products</button>
+          <button class="category-tab px-6 py-3 text-gray-800" data-category="shoes">Shoes</button>
+          <button class="category-tab px-6 py-3 text-gray-800" data-category="apparel">Apparel</button>
+          <button class="category-tab px-6 py-3 text-gray-800" data-category="accessories">Accessories</button>
+        </div>
+        
+        <!-- Products Grid -->
+        <div class="products-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for product_handle in section.settings.product_handles %}
+            {% comment %} {{ product_handle.handle }} {% endcomment %}
+            {% assign product = product_handle.handle %}
+            {% if product != blank %}
+              <div class="product-card bg-white rounded-lg overflow-hidden shadow-md" 
+                   data-product-id="{{ product.id }}" 
+                   data-product-price="{{ product.price | money_without_currency | times: 1 }}"
+                   data-product-title="{{ product.title }}"
+                   data-product-image="{{ product.featured_image | image_url: width: 300 }}"
+                   data-product-url="{{ product.url }}"
+                   data-category="{% if product_handle contains 'sneaker' %}shoes{% elsif product_handle contains 'socks' %}accessories{% else %}apparel{% endif %}">
+                <div class="relative">
+                  {% if product.featured_image != blank %}
+                    {{ product.featured_image | image_url: width: 300 | image_tag: 
+                      class: 'w-full h-48 object-cover',
+                      loading: 'lazy',
+                      alt: product.title
+                    }}
+                  {% else %}
+                    {{ 'product-1' | placeholder_svg_tag: 'w-full h-48 bg-gray-200' }}
+                  {% endif %}
+                  
+                  {% if forloop.index == 2 or forloop.index == 5 %}
+                    <div class="absolute top-2 left-2 limited-edition-badge text-white text-xs font-bold px-2 py-1 rounded">LIMITED EDITION</div>
+                  {% endif %}
+                  
+                  <button class="add-to-bundle absolute bottom-2 right-2 bg-white text-gray-800 hover:bg-gray-100 px-3 py-1 rounded-full text-sm font-medium shadow-md">Add to Bundle</button>
+                </div>
+                <div class="p-4">
+                  <h3 class="font-bold text-gray-900">{{ product.title }}</h3>
+                  <p class="text-gray-700 mt-1">{{ product.price | money }}</p>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        
+        <!-- Recommendations Section -->
+        <div class="recommendations mt-12 bg-white p-6 rounded-lg shadow-md hidden">
+          <h3 class="text-xl font-bold mb-4">Recommended to Complete Your Bundle</h3>
+          <div class="recommended-products grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Recommendations will be populated dynamically with JS -->
+          </div>
+        </div>
+      </div>
+      
+      <!-- Bundle Summary (1/3 width on desktop) -->
+      <div class="bundle-summary rounded-lg shadow-lg p-6 sticky top-4 h-fit">
+        <h3 class="text-xl font-bold mb-4">Your Jordan Bundle</h3>
+        
+        <div class="selected-items space-y-4 min-h-[200px]">
+          <p class="text-gray-500 text-center empty-bundle-message">Add items to create your custom bundle</p>
+          <!-- Selected items will be populated here with JS -->
+        </div>
+        
+        <div class="bundle-totals mt-6 pt-6 border-t border-gray-200">
+          <div class="flex justify-between mb-2">
+            <span class="text-gray-600">Subtotal:</span>
+            <span class="subtotal-amount font-medium">$0.00</span>
+          </div>
+          <div class="flex justify-between mb-2 discount-row hidden">
+            <span class="text-red-600 discount-label">Bundle Discount:</span>
+            <span class="discount-amount text-red-600 font-medium">-$0.00</span>
+          </div>
+          <div class="flex justify-between text-lg font-bold mt-2">
+            <span>Total:</span>
+            <span class="total-amount">$0.00</span>
+          </div>
+          
+          <div class="savings-message text-center text-green-600 font-medium mt-4 hidden">
+            You're saving <span class="savings-amount">$0.00</span> with this bundle!
+          </div>
+          
+          <button class="add-bundle-to-cart w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-md mt-6 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            Add Bundle to Cart
+          </button>
+          
+          <button class="save-bundle-for-later w-full border border-gray-300 hover:bg-gray-100 text-gray-800 font-medium py-2 px-4 rounded-md mt-3 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            Save Bundle for Later
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  class JordanBundleBuilder {
+    constructor(container) {
+      this.container = container;
+      this.selectedProducts = [];
+      this.discountTiers = [
+        {% for block in section.blocks %}
+          {% if block.type == 'discount_tier' %}
+            {
+              itemCount: {{ block.settings.item_count }},
+              discountPercentage: {{ block.settings.discount_percentage }}
+            },
+          {% endif %}
+        {% endfor %}
+      ];
+      
+      // Sort discount tiers by item count (ascending)
+      this.discountTiers.sort((a, b) => a.itemCount - b.itemCount);
+      
+      this.init();
+    }
+    
+    init() {
+      this.initCategoryTabs();
+      this.initProductCards();
+      this.initButtons();
+    }
+    
+    initCategoryTabs() {
+      const tabs = this.container.querySelectorAll('.category-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          // Remove active class from all tabs
+          tabs.forEach(t => t.classList.remove('active'));
+          
+          // Add active class to clicked tab
+          tab.classList.add('active');
+          
+          // Filter products
+          const category = tab.dataset.category;
+          this.filterProductsByCategory(category);
+        });
+      });
+    }
+    
+    filterProductsByCategory(category) {
+      const productCards = this.container.querySelectorAll('.product-card');
+      
+      productCards.forEach(card => {
+        if (category === 'all' || card.dataset.category === category) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+    
+    initProductCards() {
+      const productCards = this.container.querySelectorAll('.product-card');
+      
+      productCards.forEach(card => {
+        const addButton = card.querySelector('.add-to-bundle');
+        
+        addButton.addEventListener('click', () => {
+          const productId = card.dataset.productId;
+          const isSelected = card.classList.contains('selected');
+          
+          if (isSelected) {
+            // Remove from bundle
+            this.removeProductFromBundle(productId);
+            card.classList.remove('selected');
+            addButton.textContent = 'Add to Bundle';
+          } else {
+            // Add to bundle
+            const productData = {
+              id: productId,
+              title: card.dataset.productTitle,
+              price: parseFloat(card.dataset.productPrice),
+              image: card.dataset.productImage,
+              url: card.dataset.productUrl,
+              category: card.dataset.category
+            };
+            
+            this.addProductToBundle(productData);
+            card.classList.add('selected');
+            addButton.textContent = 'Remove';
+          }
+        });
+      });
+    }
+    
+    initButtons() {
+      const addBundleButton = this.container.querySelector('.add-bundle-to-cart');
+      const saveBundleButton = this.container.querySelector('.save-bundle-for-later');
+      
+      addBundleButton.addEventListener('click', () => {
+        this.addBundleToCart();
+      });
+      
+      saveBundleButton.addEventListener('click', () => {
+        this.saveBundleForLater();
+      });
+    }
+    
+    addProductToBundle(productData, fromRecommendation = false) {
+      // Check if product is already in bundle
+      const existingIndex = this.selectedProducts.findIndex(p => p.id === productData.id);
+      
+      // Check if we've reached the maximum limit of 4 products
+      if (this.selectedProducts.length >= 4) {
+        alert('Maximum of 4 products allowed in a bundle');
+        return;
+      }
+      
+      if (existingIndex === -1) {
+        // Add a flag to track if product was added from recommendations
+        productData.fromRecommendation = fromRecommendation;
+        this.selectedProducts.push(productData);
+        this.updateBundleSummary();
+        this.updateRecommendations();
+      }
+    }
+    
+    removeProductFromBundle(productId) {
+      this.selectedProducts = this.selectedProducts.filter(p => p.id !== productId);
+      this.updateBundleSummary();
+      this.updateRecommendations();
+    }
+    
+    updateBundleSummary() {
+      const selectedItemsContainer = this.container.querySelector('.selected-items');
+      const emptyBundleMessage = this.container.querySelector('.empty-bundle-message');
+      const subtotalAmount = this.container.querySelector('.subtotal-amount');
+      const discountRow = this.container.querySelector('.discount-row');
+      const discountAmount = this.container.querySelector('.discount-amount');
+      const discountLabel = this.container.querySelector('.discount-label');
+      const totalAmount = this.container.querySelector('.total-amount');
+      const savingsMessage = this.container.querySelector('.savings-message');
+      const savingsAmount = this.container.querySelector('.savings-amount');
+      const addBundleButton = this.container.querySelector('.add-bundle-to-cart');
+      const saveBundleButton = this.container.querySelector('.save-bundle-for-later');
+      
+      // Show limit message if we have 4 products
+      let limitMessage = selectedItemsContainer.querySelector('.limit-message');
+      if (this.selectedProducts.length >= 4) {
+        if (!limitMessage) {
+          limitMessage = document.createElement('div');
+          limitMessage.className = 'limit-message text-center text-red-600 font-medium mt-2 mb-2';
+          limitMessage.textContent = 'Maximum limit of 4 products reached';
+          selectedItemsContainer.appendChild(limitMessage);
+        }
+      } else if (limitMessage) {
+        limitMessage.remove();
+      }
+      
+      if (this.selectedProducts.length === 0) {
+        // Show empty message
+        selectedItemsContainer.innerHTML = '';
+        selectedItemsContainer.appendChild(emptyBundleMessage);
+        subtotalAmount.textContent = '$0.00';
+        totalAmount.textContent = '$0.00';
+        discountRow.classList.add('hidden');
+        savingsMessage.classList.add('hidden');
+        addBundleButton.disabled = true;
+        saveBundleButton.disabled = true;
+        return;
+      }
+      
+      // Clear selected items when we have products
+      selectedItemsContainer.innerHTML = '';
+      
+      // Calculate subtotal
+      const subtotal = this.selectedProducts.reduce((sum, product) => sum + product.price, 0);
+      
+      // Determine applicable discount
+      let discountPercentage = 0;
+      for (let i = this.discountTiers.length - 1; i >= 0; i--) {
+        if (this.selectedProducts.length >= this.discountTiers[i].itemCount) {
+          discountPercentage = this.discountTiers[i].discountPercentage;
+          break;
+        }
+      }
+      
+      // Calculate discount amount
+      const discountValue = subtotal * (discountPercentage / 100);
+      const total = subtotal - discountValue;
+      
+      // Update discount display
+      if (discountPercentage > 0) {
+        discountRow.classList.remove('hidden');
+        discountLabel.textContent = `Bundle Discount (${discountPercentage}%):`;
+        discountAmount.textContent = `-$${discountValue.toFixed(2)}`;
+        savingsMessage.classList.remove('hidden');
+        savingsAmount.textContent = `$${discountValue.toFixed(2)}`;
+      } else {
+        discountRow.classList.add('hidden');
+        savingsMessage.classList.add('hidden');
+      }
+      
+      // Update totals
+      subtotalAmount.textContent = `$${subtotal.toFixed(2)}`;
+      totalAmount.textContent = `$${total.toFixed(2)}`;
+      
+      // Enable buttons
+      addBundleButton.disabled = false;
+      saveBundleButton.disabled = false;
+      
+      // Add selected items to summary
+      this.selectedProducts.forEach(product => {
+        const itemElement = document.createElement('div');
+        itemElement.className = 'flex items-center space-x-3 bg-white p-3 rounded-md shadow-sm';
+        itemElement.innerHTML = `
+          <img src="${product.image}" alt="${product.title}" class="w-16 h-16 object-cover rounded">
+          <div class="flex-1">
+            <h4 class="font-medium text-gray-900">${product.title}</h4>
+            <p class="text-gray-600">$${product.price.toFixed(2)}</p>
+          </div>
+          <button class="remove-item text-gray-400 hover:text-red-600" data-product-id="${product.id}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        `;
+        
+        selectedItemsContainer.appendChild(itemElement);
+        
+        // Add remove event listener
+        const removeButton = itemElement.querySelector('.remove-item');
+        
+        // If product is from recommendation, add a visual indicator
+        if (product.fromRecommendation) {
+          const recommendedBadge = document.createElement('div');
+          recommendedBadge.className = 'text-xs text-green-600 font-medium mt-1';
+          recommendedBadge.textContent = 'Recommended';
+          itemElement.querySelector('.flex-1').appendChild(recommendedBadge);
+        }
+        
+        removeButton.addEventListener('click', () => {
+          this.removeProductFromBundle(product.id);
+          
+          // Update product card UI
+          const productCard = this.container.querySelector(`.product-card[data-product-id="${product.id}"]`);
+          if (productCard) {
+            productCard.classList.remove('selected');
+            const addButton = productCard.querySelector('.add-to-bundle');
+            addButton.textContent = 'Add to Bundle';
+          }
+        });
+      });
+      
+      // Add pulse animation to the add button if we have enough items for a discount
+      if (discountPercentage > 0) {
+        addBundleButton.classList.add('pulse-animation');
+      } else {
+        addBundleButton.classList.remove('pulse-animation');
+      }
+    }
+    
+    updateRecommendations() {
+      const recommendationsSection = this.container.querySelector('.recommendations');
+      const recommendedProductsContainer = this.container.querySelector('.recommended-products');
+      
+      // Only show recommendations if we have at least one product in the bundle
+      if (this.selectedProducts.length === 0) {
+        recommendationsSection.classList.add('hidden');
+        return;
+      }
+      
+      // Get categories of selected products
+      const selectedCategories = this.selectedProducts.map(p => p.category);
+      
+      // Find products that are not in the bundle and in complementary categories
+      const allProductCards = this.container.querySelectorAll('.product-card');
+      const recommendedProducts = [];
+      
+      allProductCards.forEach(card => {
+        const productId = card.dataset.productId;
+        const category = card.dataset.category;
+        
+        // Check if product is not already in bundle
+        if (!this.selectedProducts.some(p => p.id === productId)) {
+          // Prioritize products from categories not yet in the bundle
+          if (!selectedCategories.includes(category)) {
+            recommendedProducts.push({
+              id: productId,
+              element: card,
+              priority: 1
+            });
+          } else {
+            recommendedProducts.push({
+              id: productId,
+              element: card,
+              priority: 2
+            });
+          }
+        }
+      });
+      
+      // Sort by priority (lower number = higher priority)
+      recommendedProducts.sort((a, b) => a.priority - b.priority);
+      
+      // Take top 3 recommendations
+      const topRecommendations = recommendedProducts.slice(0, 3);
+      
+      if (topRecommendations.length > 0) {
+        recommendationsSection.classList.remove('hidden');
+        recommendedProductsContainer.innerHTML = '';
+        
+        topRecommendations.forEach(rec => {
+          const card = rec.element.cloneNode(true);
+          card.classList.add('recommendation-card');
+          
+          // Update the add button text and style
+          const addButton = card.querySelector('.add-to-bundle');
+          addButton.textContent = 'Add to Bundle';
+          addButton.classList.add('bg-red-600', 'text-white', 'hover:bg-red-700');
+          addButton.classList.remove('bg-white', 'text-gray-800', 'hover:bg-gray-100');
+          
+          // Add event listener to the cloned button
+          addButton.addEventListener('click', () => {
+            const productId = card.dataset.productId;
+            const originalCard = this.container.querySelector(`.product-card[data-product-id="${productId}"]`);
+            
+            if (originalCard) {
+              // Get product data
+              const productData = {
+                id: originalCard.dataset.productId,
+                title: originalCard.dataset.productTitle,
+                price: parseFloat(originalCard.dataset.productPrice),
+                image: originalCard.dataset.productImage,
+                url: originalCard.dataset.productUrl,
+                category: originalCard.dataset.category
+              };
+              
+              // Add to bundle with fromRecommendation flag set to true
+              this.addProductToBundle(productData, true);
+              
+              // Update UI
+              originalCard.classList.add('selected');
+              const originalAddButton = originalCard.querySelector('.add-to-bundle');
+              originalAddButton.textContent = 'Remove';
+            }
+          });
+          
+          recommendedProductsContainer.appendChild(card);
+        });
+      } else {
+        recommendationsSection.classList.add('hidden');
+      }
+    }
+    
+    async addBundleToCart() {
+      const addBundleButton = this.container.querySelector('.add-bundle-to-cart');
+      addBundleButton.textContent = 'Adding...';
+      addBundleButton.disabled = true;
+      
+      try {
+        // Create an array of items to add to cart
+        const items = this.selectedProducts.map(product => {
+          return {
+            id: product.id,
+            quantity: 1
+          };
+        });
+        
+        // Add items to cart
+        const response = await fetch('/cart/add.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ items })
+        });
+        
+        if (response.ok) {
+          addBundleButton.textContent = 'Added to Cart!';
+          setTimeout(() => {
+            addBundleButton.textContent = 'Add Bundle to Cart';
+            addBundleButton.disabled = false;
+            
+            // Refresh cart drawer/page if needed
+            if (typeof window.refreshCart === 'function') {
+              window.refreshCart();
+            }
+          }, 2000);
+        } else {
+          throw new Error('Failed to add items to cart');
+        }
+      } catch (error) {
+        console.error('Error adding bundle to cart:', error);
+        addBundleButton.textContent = 'Error - Try Again';
+        addBundleButton.disabled = false;
+      }
+    }
+    
+    saveBundleForLater() {
+      const saveBundleButton = this.container.querySelector('.save-bundle-for-later');
+      saveBundleButton.textContent = 'Saving...';
+      
+      try {
+        // Create a bundle object
+        const bundle = {
+          products: this.selectedProducts,
+          createdAt: new Date().toISOString()
+        };
+        
+        // Save to localStorage
+        let savedBundles = JSON.parse(localStorage.getItem('jordanSavedBundles') || '[]');
+        savedBundles.push(bundle);
+        localStorage.setItem('jordanSavedBundles', JSON.stringify(savedBundles));
+        
+        saveBundleButton.textContent = 'Saved!';
+        setTimeout(() => {
+          saveBundleButton.textContent = 'Save Bundle for Later';
+        }, 2000);
+      } catch (error) {
+        console.error('Error saving bundle:', error);
+        saveBundleButton.textContent = 'Error - Try Again';
+      }
+    }
+  }
+  
+  // Initialize the bundle builder when the DOM is loaded
+  document.addEventListener('DOMContentLoaded', () => {
+    const bundleBuilderContainers = document.querySelectorAll('.jordan-bundle-builder');
+    bundleBuilderContainers.forEach(container => {
+      new JordanBundleBuilder(container);
+    });
+  });
+</script>
+
+{% schema %}
+{
+  "name": "Jordan Bundle Builder (Re",
+  "class": "shopdev",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Title",
+      "default": "Build Your Jordan Bundle"
+    },
+    {
+      "type": "textarea",
+      "id": "subtitle",
+      "label": "Section Subtitle",
+      "default": "Create your custom Air Jordan bundle and save with our exclusive discounts. Mix and match shoes, apparel, and accessories to complete your look."
+    },
+    {
+      "type": "product_list",
+      "id": "product_handles",
+      "label": "Select Products",
+      "limit": 30
+    }
+  ],
+  "blocks": [
+    {
+      "type": "discount_tier",
+      "name": "Discount Tier",
+      "settings": [
+        {
+          "type": "range",
+          "id": "item_count",
+          "min": 2,
+          "max": 10,
+          "step": 1,
+          "label": "Number of Items",
+          "default": 2
+        },
+        {
+          "type": "range",
+          "id": "discount_percentage",
+          "min": 5,
+          "max": 50,
+          "step": 5,
+          "label": "Discount Percentage",
+          "default": 10
+        },
+        {
+          "type": "text",
+          "id": "tier_description",
+          "label": "Tier Description",
+          "default": "Buy 2 items"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Jordan Bundle Builder (Remix)",
+      "settings": {
+        "title": "Build Your Jordan Bundle",
+        "subtitle": "Create your custom Air Jordan bundle and save with our exclusive discounts. Mix and match shoes, apparel, and accessories to complete your look."
+      },
+      "blocks": [
+        {
+          "type": "discount_tier",
+          "settings": {
+            "item_count": 2,
+            "discount_percentage": 10,
+            "tier_description": "Buy 2 items"
+          }
+        },
+        {
+          "type": "discount_tier",
+          "settings": {
+            "item_count": 3,
+            "discount_percentage": 15,
+            "tier_description": "Buy 3 items"
+          }
+        },
+        {
+          "type": "discount_tier",
+          "settings": {
+            "item_count": 4,
+            "discount_percentage": 20,
+            "tier_description": "Buy 4+ items"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
+
+
+
+
+==========================================================================
+
+
+<div class="shift_text">
+  <div class="container">
+    <div class="section_heading">
+      <h2>Shift in Cooking Culture</h2>
+    </div>
+    <div class="shift_info">
+      <ul>
+        <li>Indian kitchens have seen quiet revolutions from brass to cast iron, steel to aluminum, and finally, to non-stick. It promised ease, and it delivered. But at what cost?</li>
+        <li>Chipped coatings, chemical leaching, and surfaces that gave up too soon made us question the tools we trust</li>
+        <li>Now, we believe love deserves better. Because when meals are made with care, cookware should carry the same intention</li>
+      </ul>
+    </div>
+  </div>
+  <div class="shift_wpr">
+    <div class="shift_slider swiper">
+      <div class="swiper-wrapper">
+        <div class="swiper-slide">
+          <div class="shift_block">
+            <div class="shift_img_wpr">
+              <img src="https://cdn.shopify.com/s/files/1/0639/1863/7140/files/image_973.png?v=1756233116">
+            </div>
+            <div class="shift_col_info">
+              <h3>Early Era</h3>
+              <h3>Traditional Copper Utensils</h3>
+            </div>
+          </div>
+        </div>
+        <div class="swiper-slide">
+          <div class="shift_block">
+            <div class="shift_img_wpr">
+              <img src="https://cdn.shopify.com/s/files/1/0639/1863/7140/files/Frame_2147225112.png?v=1756233219">
+            </div>
+            <div class="shift_col_info">
+              <h3>Mid-Era</h3>
+              <h3>Cast Iron & Aluminum Vessels</h3>
+            </div>
+          </div>
+        </div>
+        <div class="swiper-slide">
+          <div class="shift_block">
+            <div class="shift_img_wpr">
+              <img src="https://cdn.shopify.com/s/files/1/0639/1863/7140/files/Frame_2147225113.png?v=1756233211">
+            </div>
+            <div class="shift_col_info">
+              <h3>Modern Convenience Era</h3>
+              <h3>Steel & Non-Stick Cookware</h3>
+            </div>
+          </div>
+        </div>
+        <div class="swiper-slide">
+          <div class="shift_block">
+            <div class="shift_img_wpr">
+              <img src="https://cdn.shopify.com/s/files/1/0639/1863/7140/files/Frame_2147225114.png?v=1756233115">
+            </div>
+            <div class="shift_col_info">
+              <h3>Present & Future</h3>
+              <h3>Triply Stainless Steel</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="triply_cook_section">
+  <div class="container">
+    <div class="triply_cook_wpr">
+      <div class="triply_cook_col">
+        <div class="triply_cook_title">
+          <h2>Triply Cookware, Thoughtfully Made in India</h2>
+          <p>At Zira, we make Triply stainless steel cookware designed for Indian homes. Our products are toxin-free, coating-free, durable, and beautifully functional—built to last across generations of tadkas, gravies, stir-fries, and sweets.</p>
+          <p>This is cookware made to honour the hands that cook with love.</p>
+        </div>
+      </div>
+      <div class="triply_cook_info">
+        <div class="triply_cook_img_wpr">
+          <div class="triply_cook_img">
+            <img src="https://cdn.shopify.com/s/files/1/0639/1863/7140/files/Frame_2147225127.png?v=1756234017">
+          </div>
+          <div class="triply_cook_img">
+            <img src="https://cdn.shopify.com/s/files/1/0639/1863/7140/files/Frame_2147225128.png?v=1756234015">
+          </div>
+          <div class="triply_cook_img">
+            <img src="https://cdn.shopify.com/s/files/1/0639/1863/7140/files/Frame_2147225129.png?v=1756234014">
+          </div>
+        </div>
+      </div>  
+    </div>
+  </div>
+</div>
+
+<script>
+var shift_slider = new Swiper(".shift_slider", {
+  slidesPerView: 1.5,
+  spaceBetween: 8,
+  breakpoints: {
+    768: {
+      slidesPerView: 3,
+      spaceBetween: 16,
+    },
+    1081: {
+      slidesPerView: 4,
+      spaceBetween: 16,
+    },
+  },
+});
+</script>
+
+{% comment %} {% schema %}
+  {
+    "name": "test html",
+    "settings": [],
+    "presets": [
+      {
+        "name": "test html"
+      }
+    ]
+  }
+{% endschema %} {% endcomment %}

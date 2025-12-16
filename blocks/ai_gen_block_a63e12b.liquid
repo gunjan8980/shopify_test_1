@@ -1,0 +1,858 @@
+{% doc %}
+  @prompt
+    create tabbing section in this section on top there is one heading and then tabs ( all, raceipe, new, ingradiants ) this tab titles are blog posts tag except "all". I want fuctionallity like on load deafult "all" tab selected and in this tab i want to show all my blogpost of site. and then if user click on other tab "recepies" and liquid condition like if blogpost tag contains this title "recepise" show that blogpost. now do this same for other tabs also note that title should dynamic like i am able to add multiple tabs
+
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-blog-tabs-{{ ai_gen_id }} {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: {{ block.settings.section_padding }}px;
+  }
+
+  .ai-blog-tabs__heading-{{ ai_gen_id }} {
+    text-align: {{ block.settings.heading_alignment }};
+    margin-bottom: {{ block.settings.heading_margin }}px;
+    color: {{ block.settings.heading_color }};
+    font-size: {{ block.settings.heading_size }}px;
+  }
+
+  .ai-blog-tabs__nav-{{ ai_gen_id }} {
+    display: flex;
+    flex-wrap: wrap;
+    gap: {{ block.settings.tab_spacing }}px;
+    margin-bottom: {{ block.settings.content_spacing }}px;
+    border-bottom: 1px solid {{ block.settings.border_color }};
+    padding-bottom: 8px;
+  }
+
+  .ai-blog-tabs__tab-{{ ai_gen_id }} {
+    background: none;
+    border: none;
+    padding: {{ block.settings.tab_padding }}px {{ block.settings.tab_padding | times: 1.5 }}px;
+    cursor: pointer;
+    font-size: {{ block.settings.tab_font_size }}px;
+    color: {{ block.settings.tab_inactive_color }};
+    border-radius: {{ block.settings.tab_border_radius }}px;
+    transition: all 0.3s ease;
+    text-transform: capitalize;
+  }
+
+  .ai-blog-tabs__tab-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.tab_hover_bg }};
+    color: {{ block.settings.tab_hover_color }};
+  }
+
+  .ai-blog-tabs__tab-{{ ai_gen_id }}.active {
+    background-color: {{ block.settings.tab_active_bg }};
+    color: {{ block.settings.tab_active_color }};
+  }
+
+  .ai-blog-tabs__content-{{ ai_gen_id }} {
+    min-height: 200px;
+  }
+
+  .ai-blog-tabs__panel-{{ ai_gen_id }} {
+    display: none;
+  }
+
+  .ai-blog-tabs__panel-{{ ai_gen_id }}.active {
+    display: block;
+  }
+
+  .ai-blog-tabs__posts-{{ ai_gen_id }} {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax({{ block.settings.card_min_width }}px, 1fr));
+    gap: {{ block.settings.posts_gap }}px;
+  }
+
+  .ai-blog-tabs__post-{{ ai_gen_id }} {
+    background-color: {{ block.settings.card_bg_color }};
+    border-radius: {{ block.settings.card_border_radius }}px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+  }
+
+  .ai-blog-tabs__post-{{ ai_gen_id }}:hover {
+    transform: translateY(-2px);
+  }
+
+  .ai-blog-tabs__post-image-{{ ai_gen_id }} {
+    width: 100%;
+    height: {{ block.settings.image_height }}px;
+    overflow: hidden;
+  }
+
+  .ai-blog-tabs__post-image-{{ ai_gen_id }} img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .ai-blog-tabs__post-image-placeholder-{{ ai_gen_id }} {
+    width: 100%;
+    height: 100%;
+    background-color: #f4f4f4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ai-blog-tabs__post-image-placeholder-{{ ai_gen_id }} svg {
+    width: 60px;
+    height: 60px;
+    opacity: 0.5;
+  }
+
+  .ai-blog-tabs__post-content-{{ ai_gen_id }} {
+    padding: {{ block.settings.card_padding }}px;
+  }
+
+  .ai-blog-tabs__post-title-{{ ai_gen_id }} {
+    font-size: {{ block.settings.post_title_size }}px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: {{ block.settings.post_title_color }};
+  }
+
+  .ai-blog-tabs__post-title-{{ ai_gen_id }} a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .ai-blog-tabs__post-title-{{ ai_gen_id }} a:hover {
+    text-decoration: underline;
+  }
+
+  .ai-blog-tabs__post-excerpt-{{ ai_gen_id }} {
+    font-size: {{ block.settings.post_excerpt_size }}px;
+    color: {{ block.settings.post_excerpt_color }};
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+
+  .ai-blog-tabs__post-meta-{{ ai_gen_id }} {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: {{ block.settings.post_meta_size }}px;
+    color: {{ block.settings.post_meta_color }};
+  }
+
+  .ai-blog-tabs__post-date-{{ ai_gen_id }} {
+    font-size: inherit;
+  }
+
+  .ai-blog-tabs__post-tags-{{ ai_gen_id }} {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .ai-blog-tabs__post-tag-{{ ai_gen_id }} {
+    background-color: {{ block.settings.tag_bg_color }};
+    color: {{ block.settings.tag_text_color }};
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+
+  .ai-blog-tabs__empty-{{ ai_gen_id }} {
+    text-align: center;
+    padding: 40px 20px;
+    color: {{ block.settings.empty_text_color }};
+    font-size: {{ block.settings.empty_text_size }}px;
+  }
+
+  @media screen and (max-width: 768px) {
+    .ai-blog-tabs__nav-{{ ai_gen_id }} {
+      justify-content: center;
+    }
+
+    .ai-blog-tabs__posts-{{ ai_gen_id }} {
+      grid-template-columns: 1fr;
+    }
+
+    .ai-blog-tabs__post-meta-{{ ai_gen_id }} {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+  }
+{% endstyle %}
+
+<blog-tabs-{{ ai_gen_id }}
+  class="ai-blog-tabs-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  {% if block.settings.heading != blank %}
+    <h2 class="ai-blog-tabs__heading-{{ ai_gen_id }}">{{ block.settings.heading }}</h2>
+  {% endif %}
+
+  <div class="ai-blog-tabs__nav-{{ ai_gen_id }}">
+    <button
+      class="ai-blog-tabs__tab-{{ ai_gen_id }} active"
+      data-tab="all"
+      type="button"
+    >
+      {{ block.settings.all_tab_label }}
+    </button>
+
+    {% for i in (1..5) %}
+      {% assign tab_label_key = 'tab_' | append: i | append: '_label' %}
+      {% assign tab_tag_key = 'tab_' | append: i | append: '_tag' %}
+      {% assign tab_label = block.settings[tab_label_key] %}
+      {% assign tab_tag = block.settings[tab_tag_key] %}
+
+      {% if tab_label != blank and tab_tag != blank %}
+        <button
+          class="ai-blog-tabs__tab-{{ ai_gen_id }}"
+          data-tab="{{ tab_tag | handle }}"
+          type="button"
+        >
+          {{ tab_label }}
+        </button>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="ai-blog-tabs__content-{{ ai_gen_id }}">
+    <div class="ai-blog-tabs__panel-{{ ai_gen_id }} active" data-panel="all">
+      {% if block.settings.blog != blank %}
+        {% assign all_articles = block.settings.blog.articles %}
+        {% if block.settings.posts_limit > 0 %}
+          {% assign all_articles = all_articles | slice: 0, block.settings.posts_limit %}
+        {% endif %}
+
+        {% if all_articles.size > 0 %}
+          <div class="ai-blog-tabs__posts-{{ ai_gen_id }}">
+            {% for article in all_articles %}
+              <article class="ai-blog-tabs__post-{{ ai_gen_id }}">
+                <div class="ai-blog-tabs__post-image-{{ ai_gen_id }}">
+                  {% if article.image %}
+                    <img
+                      src="{{ article.image | image_url: width: 400 }}"
+                      alt="{{ article.image.alt | escape }}"
+                      loading="lazy"
+                      width="400"
+                      height="{{ block.settings.image_height }}"
+                    >
+                  {% else %}
+                    <div class="ai-blog-tabs__post-image-placeholder-{{ ai_gen_id }}">
+                      {{ 'blog-apparel-1' | placeholder_svg_tag }}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="ai-blog-tabs__post-content-{{ ai_gen_id }}">
+                  <h3 class="ai-blog-tabs__post-title-{{ ai_gen_id }}">
+                    <a href="{{ article.url }}">{{ article.title }}</a>
+                  </h3>
+
+                  {% if block.settings.show_excerpt and article.excerpt != blank %}
+                    <div class="ai-blog-tabs__post-excerpt-{{ ai_gen_id }}">
+                      {{ article.excerpt | truncate: block.settings.excerpt_length }}
+                    </div>
+                  {% endif %}
+
+                  <div class="ai-blog-tabs__post-meta-{{ ai_gen_id }}">
+                    {% if block.settings.show_date %}
+                      <time class="ai-blog-tabs__post-date-{{ ai_gen_id }}" datetime="{{ article.published_at | date: '%Y-%m-%d' }}">
+                        {{ article.published_at | date: '%B %d, %Y' }}
+                      </time>
+                    {% endif %}
+
+                    {% if block.settings.show_tags and article.tags.size > 0 %}
+                      <div class="ai-blog-tabs__post-tags-{{ ai_gen_id }}">
+                        {% for tag in article.tags limit: 3 %}
+                          <span class="ai-blog-tabs__post-tag-{{ ai_gen_id }}">{{ tag }}</span>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="ai-blog-tabs__empty-{{ ai_gen_id }}">
+            No blog posts found. Please add some articles to your blog.
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="ai-blog-tabs__empty-{{ ai_gen_id }}">
+          Please select a blog to display posts.
+        </div>
+      {% endif %}
+    </div>
+
+    {% for i in (1..5) %}
+      {% assign tab_label_key = 'tab_' | append: i | append: '_label' %}
+      {% assign tab_tag_key = 'tab_' | append: i | append: '_tag' %}
+      {% assign tab_label = block.settings[tab_label_key] %}
+      {% assign tab_tag = block.settings[tab_tag_key] %}
+
+      {% if tab_label != blank and tab_tag != blank %}
+        <div class="ai-blog-tabs__panel-{{ ai_gen_id }}" data-panel="{{ tab_tag | handle }}">
+          {% if block.settings.blog != blank %}
+            {% assign filtered_articles = block.settings.blog.articles | where: 'tags', tab_tag %}
+           ++  {{ filtered_articles }}
+            {% if block.settings.posts_limit > 0 %}
+              {% assign filtered_articles = filtered_articles | slice: 0, block.settings.posts_limit %}
+            {% endif %}
+
+            {% if filtered_articles.size > 0 %}
+              <div class="ai-blog-tabs__posts-{{ ai_gen_id }}">
+                {% for article in filtered_articles %}
+                  <article class="ai-blog-tabs__post-{{ ai_gen_id }}">
+                    <div class="ai-blog-tabs__post-image-{{ ai_gen_id }}">
+                      {% if article.image %}
+                        <img
+                          src="{{ article.image | image_url: width: 400 }}"
+                          alt="{{ article.image.alt | escape }}"
+                          loading="lazy"
+                          width="400"
+                          height="{{ block.settings.image_height }}"
+                        >
+                      {% else %}
+                        <div class="ai-blog-tabs__post-image-placeholder-{{ ai_gen_id }}">
+                          {{ 'blog-apparel-1' | placeholder_svg_tag }}
+                        </div>
+                      {% endif %}
+                    </div>
+
+                    <div class="ai-blog-tabs__post-content-{{ ai_gen_id }}">
+                      <h3 class="ai-blog-tabs__post-title-{{ ai_gen_id }}">
+                        <a href="{{ article.url }}">{{ article.title }}</a>
+                      </h3>
+
+                      {% if block.settings.show_excerpt and article.excerpt != blank %}
+                        <div class="ai-blog-tabs__post-excerpt-{{ ai_gen_id }}">
+                          {{ article.excerpt | truncate: block.settings.excerpt_length }}
+                        </div>
+                      {% endif %}
+
+                      <div class="ai-blog-tabs__post-meta-{{ ai_gen_id }}">
+                        {% if block.settings.show_date %}
+                          <time class="ai-blog-tabs__post-date-{{ ai_gen_id }}" datetime="{{ article.published_at | date: '%Y-%m-%d' }}">
+                            {{ article.published_at | date: '%B %d, %Y' }}
+                          </time>
+                        {% endif %}
+
+                        {% if block.settings.show_tags and article.tags.size > 0 %}
+                          <div class="ai-blog-tabs__post-tags-{{ ai_gen_id }}">
+                            {% for tag in article.tags limit: 3 %}
+                              <span class="ai-blog-tabs__post-tag-{{ ai_gen_id }}">{{ tag }}</span>
+                            {% endfor %}
+                          </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </article>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="ai-blog-tabs__empty-{{ ai_gen_id }}">
+             ==   No posts found with the tag "{{ tab_tag }}".
+              </div>
+            {% endif %}
+          {% else %}
+            <div class="ai-blog-tabs__empty-{{ ai_gen_id }}">
+              Please select a blog to display posts.
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</blog-tabs-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class BlogTabs{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+      }
+
+      connectedCallback() {
+        this.tabs = this.querySelectorAll('.ai-blog-tabs__tab-{{ ai_gen_id }}');
+        this.panels = this.querySelectorAll('.ai-blog-tabs__panel-{{ ai_gen_id }}');
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        this.tabs.forEach((tab) => {
+          tab.addEventListener('click', () => {
+            const targetTab = tab.dataset.tab;
+            this.switchTab(targetTab);
+          });
+        });
+      }
+
+      switchTab(targetTab) {
+        this.tabs.forEach((tab) => {
+          tab.classList.remove('active');
+          if (tab.dataset.tab === targetTab) {
+            tab.classList.add('active');
+          }
+        });
+
+        this.panels.forEach((panel) => {
+          panel.classList.remove('active');
+          if (panel.dataset.panel === targetTab) {
+            panel.classList.add('active');
+          }
+        });
+      }
+    }
+
+    customElements.define('blog-tabs-{{ ai_gen_id }}', BlogTabs{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Blog tabs",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Latest Blog Posts"
+    },
+    {
+      "type": "blog",
+      "id": "blog",
+      "label": "Blog"
+    },
+    {
+      "type": "text",
+      "id": "all_tab_label",
+      "label": "All tab label",
+      "default": "All"
+    },
+    {
+      "type": "range",
+      "id": "posts_limit",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "label": "Posts limit",
+      "info": "Set to 0 to show all posts",
+      "default": 6
+    },
+    {
+      "type": "header",
+      "content": "Tab 1"
+    },
+    {
+      "type": "text",
+      "id": "tab_1_label",
+      "label": "Tab label",
+      "default": "Recipes"
+    },
+    {
+      "type": "text",
+      "id": "tab_1_tag",
+      "label": "Blog tag",
+      "default": "recipes"
+    },
+    {
+      "type": "header",
+      "content": "Tab 2"
+    },
+    {
+      "type": "text",
+      "id": "tab_2_label",
+      "label": "Tab label",
+      "default": "New"
+    },
+    {
+      "type": "text",
+      "id": "tab_2_tag",
+      "label": "Blog tag",
+      "default": "new"
+    },
+    {
+      "type": "header",
+      "content": "Tab 3"
+    },
+    {
+      "type": "text",
+      "id": "tab_3_label",
+      "label": "Tab label",
+      "default": "Ingredients"
+    },
+    {
+      "type": "text",
+      "id": "tab_3_tag",
+      "label": "Blog tag",
+      "default": "ingredients"
+    },
+    {
+      "type": "header",
+      "content": "Tab 4"
+    },
+    {
+      "type": "text",
+      "id": "tab_4_label",
+      "label": "Tab label"
+    },
+    {
+      "type": "text",
+      "id": "tab_4_tag",
+      "label": "Blog tag"
+    },
+    {
+      "type": "header",
+      "content": "Tab 5"
+    },
+    {
+      "type": "text",
+      "id": "tab_5_label",
+      "label": "Tab label"
+    },
+    {
+      "type": "text",
+      "id": "tab_5_tag",
+      "label": "Blog tag"
+    },
+    {
+      "type": "header",
+      "content": "Post display"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_excerpt",
+      "label": "Show excerpt",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "excerpt_length",
+      "min": 50,
+      "max": 300,
+      "step": 10,
+      "label": "Excerpt length",
+      "default": 150
+    },
+    {
+      "type": "checkbox",
+      "id": "show_date",
+      "label": "Show date",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tags",
+      "label": "Show tags",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "Heading alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "range",
+      "id": "card_min_width",
+      "min": 250,
+      "max": 400,
+      "step": 10,
+      "unit": "px",
+      "label": "Card minimum width",
+      "default": 300
+    },
+    {
+      "type": "range",
+      "id": "image_height",
+      "min": 150,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "label": "Image height",
+      "default": 200
+    },
+    {
+      "type": "range",
+      "id": "posts_gap",
+      "min": 10,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Posts gap",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "label": "Section padding",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "heading_margin",
+      "min": 10,
+      "max": 60,
+      "step": 2,
+      "unit": "px",
+      "label": "Heading bottom margin",
+      "default": 30
+    },
+    {
+      "type": "range",
+      "id": "content_spacing",
+      "min": 20,
+      "max": 60,
+      "step": 4,
+      "unit": "px",
+      "label": "Content spacing",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "card_padding",
+      "min": 10,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "Card padding",
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "Tab styling"
+    },
+    {
+      "type": "range",
+      "id": "tab_spacing",
+      "min": 5,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Tab spacing",
+      "default": 10
+    },
+    {
+      "type": "range",
+      "id": "tab_padding",
+      "min": 8,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Tab padding",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "tab_border_radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Tab border radius",
+      "default": 6
+    },
+    {
+      "type": "range",
+      "id": "card_border_radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Card border radius",
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 20,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "label": "Heading size",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "tab_font_size",
+      "min": 12,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Tab font size",
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "post_title_size",
+      "min": 14,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "label": "Post title size",
+      "default": 18
+    },
+    {
+      "type": "range",
+      "id": "post_excerpt_size",
+      "min": 12,
+      "max": 18,
+      "step": 1,
+      "unit": "px",
+      "label": "Post excerpt size",
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "post_meta_size",
+      "min": 10,
+      "max": 16,
+      "step": 1,
+      "unit": "px",
+      "label": "Post meta size",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "empty_text_size",
+      "min": 14,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Empty text size",
+      "default": 16
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Heading color",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border color",
+      "default": "#e5e5e5"
+    },
+    {
+      "type": "color",
+      "id": "tab_inactive_color",
+      "label": "Tab inactive color",
+      "default": "#666666"
+    },
+    {
+      "type": "color",
+      "id": "tab_hover_bg",
+      "label": "Tab hover background",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "color",
+      "id": "tab_hover_color",
+      "label": "Tab hover color",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "tab_active_bg",
+      "label": "Tab active background",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "tab_active_color",
+      "label": "Tab active color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "card_bg_color",
+      "label": "Card background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "post_title_color",
+      "label": "Post title color",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "post_excerpt_color",
+      "label": "Post excerpt color",
+      "default": "#666666"
+    },
+    {
+      "type": "color",
+      "id": "post_meta_color",
+      "label": "Post meta color",
+      "default": "#999999"
+    },
+    {
+      "type": "color",
+      "id": "tag_bg_color",
+      "label": "Tag background",
+      "default": "#f0f0f0"
+    },
+    {
+      "type": "color",
+      "id": "tag_text_color",
+      "label": "Tag text color",
+      "default": "#666666"
+    },
+    {
+      "type": "color",
+      "id": "empty_text_color",
+      "label": "Empty text color",
+      "default": "#999999"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Blog tabs"
+    }
+  ]
+}
+{% endschema %}

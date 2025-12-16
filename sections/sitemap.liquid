@@ -1,0 +1,320 @@
+{% comment %} <!--
+File: sections/main-sitemap.liquid
+Purpose: Fully dynamic, crawlable HTML sitemap landing page for Shopify OS 2.0 themes (incl. Dawn)
+Install: Create this section, then create a JSON page template that references it (see bottom of doc).
+-->
+
+{% comment %}
+Settings & Notes
+- Uses menus + dynamic resources (collections, pages, blogs, articles, policies, account).
+- Product list uses the built-in "All" collection (collections['all']) for scalability and pagination.
+- Adds basic JSON-LD for a SiteNavigationElement to help search engines.
+- Add this section to a dedicated page template (templates/page.sitemap.json).
+{% endcomment %}
+
+<section class="sitemap container page-width" aria-labelledby="sitemap-title">
+  <style>
+    .sitemap{padding:2rem 0}
+    .sitemap h1{font-size:2rem;margin:0 0 1rem}
+    .sitemap h2{font-size:1.25rem;margin:1.5rem 0 .75rem}
+    .sitemap .grid{display:grid;gap:1.25rem}
+    .sitemap .grid-cols{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+    .sitemap ul{list-style:none;padding:0;margin:0}
+    .sitemap li{margin:.35rem 0}
+    .sitemap a{text-decoration:none}
+    .sitemap .muted{opacity:.8;font-size:.9em}
+    details.smap{border:1px solid var(--color-border, #e5e5e5);border-radius:12px;padding:0.75rem 1rem;background:#fff}
+    details.smap>summary{cursor:pointer;font-weight:600}
+    .sitemap .search{margin:1rem 0}
+    .sitemap input[type="search"]{width:100%;padding:.6rem .8rem;border-radius:10px;border:1px solid #ddd}
+    .sitemap .pill{display:inline-block;border:1px solid #ddd;border-radius:999px;padding:.15rem .6rem;margin:.125rem .25rem;font-size:.85em}
+    .sitemap .count{opacity:.6}
+  </style>
+
+  <h1 id="sitemap-title">Site Map</h1>
+  <p class="muted">Everything in one place – collections, products, pages, blogs, and more.</p>
+
+  <!-- Quick search filter (client-side) -->
+  <div class="search" role="search">
+    <input id="sitemap-search" type="search" placeholder="Type to filter links on this page…" aria-label="Filter sitemap" />
+  </div>
+
+  <!-- Top Menus -->
+  <div class="grid grid-cols" aria-label="Primary navigation">
+    {% assign main_menu = section.settings.main_menu %}
+    {% assign footer_menu = section.settings.footer_menu %}
+
+    <div>
+      <h2>Main menu</h2>
+      {% if main_menu != blank %}
+        <ul>
+          {% for link in linklists[main_menu].links %}
+            <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">No main menu selected. Set one in section settings.</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <h2>Footer menu</h2>
+      {% if footer_menu != blank %}
+        <ul>
+          {% for link in linklists[footer_menu].links %}
+            <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">No footer menu selected.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Collections -->
+  <details class="smap" open>
+    <summary>Collections <span class="count">({{ shop.collections_count }})</span></summary>
+    <div class="grid grid-cols" style="margin-top:.75rem">
+      {% assign rendered = 0 %}
+      {% for c in collections %}
+        {% if c.all_products_count > 0 %}
+          <div>
+            <h3 style="margin:.25rem 0 .35rem;font-size:1rem"><a href="{{ c.url }}">{{ c.title }}</a> <span class="count">({{ c.all_products_count }})</span></h3>
+            {% if section.settings.show_collection_tags and c.all_tags.size > 0 %}
+              <div>
+                {% for t in c.all_tags limit:20 %}
+                  <a class="pill" href="{{ c.url | append: '?filter.v.availability=1&constraint=' | append: t | url_encode }}">{{ t }}</a>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          {% assign rendered = rendered | plus: 1 %}
+        {% endif %}
+      {% endfor %}
+      {% if rendered == 0 %}
+        <p class="muted">No collections found.</p>
+      {% endif %}
+    </div>
+  </details>
+
+  <!-- Products (from the built-in All collection) -->
+  {% if section.settings.show_products %}
+    {% assign all_collection = collections['all'] %}
+    {% if all_collection %}
+      <details class="smap" {% if section.settings.products_open %}open{% endif %}>
+        <summary>All products <span class="count">({{ all_collection.products_count }})</span></summary>
+        {% paginate all_collection.products by section.settings.products_per_page %}
+          <ul style="margin-top:.5rem">
+            {% for product in paginate.items %}
+              <li>
+                <a href="{{ product.url }}">{{ product.title }}</a>
+                {% if section.settings.show_product_sku and product.variants.first.sku != blank %}
+                  <span class="muted">— SKU: {{ product.variants.first.sku }}</span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+
+          {% if paginate.pages > 1 %}
+            <nav class="pagination" role="navigation" aria-label="Pagination" style="margin-top:.5rem">
+              <span class="muted">Page {{ paginate.current_page }} of {{ paginate.pages }}</span>
+              <div>
+                {% if paginate.previous %}<a href="{{ paginate.previous.url }}">Previous</a>{% endif %}
+                {% for part in paginate.parts %}
+                  {% if part.is_link %}
+                    <a href="{{ part.url }}">{{ part.title }}</a>
+                  {% else %}
+                    <span {% if part.title == paginate.current_page %}aria-current="page"{% endif %}>{{ part.title }}</span>
+                  {% endif %}
+                {% endfor %}
+                {% if paginate.next %}<a href="{{ paginate.next.url }}">Next</a>{% endif %}
+              </div>
+            </nav>
+          {% endif %}
+        {% endpaginate %}
+      </details>
+    {% endif %}
+  {% endif %}
+
+  <!-- Pages -->
+  <details class="smap" open>
+    <summary>Pages <span class="count">({{ pages.size }})</span></summary>
+    <ul style="margin-top:.5rem">
+      {% for p in pages %}
+        {% assign page_obj = p[1] %}
+        <li><a href="{{ page_obj.url }}">{{ page_obj.title }}</a></li>
+      {% endfor %}
+    </ul>
+  </details>
+
+  <!-- Blogs & Articles -->
+  <details class="smap">
+    {% assign blog_total = 0 %}
+    {% for blog_key in blogs %}
+      {% assign blog_obj = blog_key[1] %}
+      {% assign blog_total = blog_total | plus: blog_obj.articles_count %}
+    {% endfor %}
+    <summary>Blogs & Articles <span class="count">({{ blog_total }})</span></summary>
+    <div class="grid grid-cols" style="margin-top:.5rem">
+      {% for blog_key in blogs %}
+        {% assign blog_obj = blog_key[1] %}
+        <div>
+          <h3 style="margin:.25rem 0 .35rem;font-size:1rem"><a href="{{ blog_obj.url }}">{{ blog_obj.title }}</a> <span class="count">({{ blog_obj.articles_count }})</span></h3>
+          {% if blog_obj.articles_count > 0 %}
+            <ul>
+              {% for article in blog_obj.articles limit: section.settings.articles_limit %}
+                <li><a href="{{ article.url }}">{{ article.title }}</a></li>
+              {% endfor %}
+            </ul>
+            {% if blog_obj.articles_count > section.settings.articles_limit %}
+              <a class="muted" href="{{ blog_obj.url }}">View all →</a>
+            {% endif %}
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </details>
+
+  <!-- Policies & Accounts -->
+  <div class="grid grid-cols">
+    <div>
+      <h2>Policies</h2>
+      <ul>
+        {% if shop.policy_privacy_url %}<li><a href="{{ shop.policy_privacy_url }}">Privacy policy</a></li>{% endif %}
+        {% if shop.policy_refund_url %}<li><a href="{{ shop.policy_refund_url }}">Refund policy</a></li>{% endif %}
+        {% if shop.policy_terms_of_service_url %}<li><a href="{{ shop.policy_terms_of_service_url }}">Terms of service</a></li>{% endif %}
+        {% if shop.policy_shipping_url %}<li><a href="{{ shop.policy_shipping_url }}">Shipping policy</a></li>{% endif %}
+        {% if shop.policy_contact_information %}<li><a href="/pages/contact">Contact</a></li>{% endif %}
+      </ul>
+    </div>
+    <div>
+      <h2>Account</h2>
+      <ul>
+        <li><a href="/account">Customer account</a></li>
+        <li><a href="/cart">Cart</a></li>
+        <li><a href="/search">Search</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- JSON-LD to hint navigation structure -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SiteNavigationElement",
+    "name": [
+      {% if main_menu != blank %}{% for link in linklists[main_menu].links %}"{{ link.title | escape }}"{% unless forloop.last %},{% endunless %}{% endfor %}{% endif %}
+    ],
+    "url": [
+      {% if main_menu != blank %}{% for link in linklists[main_menu].links %}"{{ shop.url }}{{ link.url }}"{% unless forloop.last %},{% endunless %}{% endfor %}{% endif %}
+    ]
+  }
+  </script>
+
+  <script>
+    (function(){
+      var input = document.getElementById('sitemap-search');
+      if(!input) return;
+      input.addEventListener('input', function(){
+        var q = this.value.toLowerCase();
+        var links = document.querySelectorAll('.sitemap a');
+        links.forEach(function(a){
+          var match = a.textContent.toLowerCase().indexOf(q) > -1;
+          a.parentElement.style.display = match ? '' : 'none';
+        });
+      });
+    })();
+  </script>
+</section>
+
+{% schema %}
+{
+  "name": "Dynamic Sitemap",
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "main_menu",
+      "label": "Main menu"
+    },
+    {
+      "type": "link_list",
+      "id": "footer_menu",
+      "label": "Footer menu"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_collection_tags",
+      "label": "Show up to 20 collection tags as pills",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Products"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_products",
+      "label": "Include All products list (paginated)",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 24,
+      "max": 200,
+      "step": 4,
+      "default": 48
+    },
+    {
+      "type": "checkbox",
+      "id": "products_open",
+      "label": "Keep products section collapsed by default",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_product_sku",
+      "label": "Show first variant SKU",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Articles"
+    },
+    {
+      "type": "range",
+      "id": "articles_limit",
+      "label": "Articles per blog to show",
+      "min": 5,
+      "max": 50,
+      "step": 5,
+      "default": 10
+    }
+  ],
+  "blocks": [],
+  "presets": [
+    {"name":"Dynamic Sitemap"}
+  ]
+}
+{% endschema %}
+
+
+<!--
+File: templates/page.sitemap.json
+Purpose: JSON template that renders the section above.
+Place in: /templates/page.sitemap.json
+-->
+{
+  "name": "Sitemap",
+  "sections": {
+    "main": {
+      "type": "main-sitemap",
+      "settings": {
+        "main_menu": "main-menu",
+        "footer_menu": "footer"
+      }
+    }
+  },
+  "order": ["main"]
+} {% endcomment %}
