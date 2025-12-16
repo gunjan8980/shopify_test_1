@@ -1,0 +1,86 @@
+<div class="addon-products-block">
+  <h3>{{ block.settings.title }}</h3>
+
+  <div class="addon-products-scroll">
+    {% for prod in block.settings.addon_products %}
+      {% assign p = prod %}
+      <button 
+  class="addon-quickview-btn"
+  data-handle="{{ p.handle }}"
+  data-json="{{ p | json | escape }}"
+>
+  <img src="{{ p.featured_image | img_url: '100x' }}" alt="{{ p.title }}">
+  <span>{{ p.title }}</span>
+</button>
+    {% endfor %}
+  </div>
+</div>
+
+<style>
+    .addon-products-block {
+  margin-top: 20px;
+  border: 1px solid #eee;
+  padding: 15px;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.addon-products-scroll {
+  max-height: 350px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.addon-product {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #eee;
+}
+
+.addon-product img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.addon-info {
+  flex: 1;
+}
+
+.addon-add-btn {
+  background: black;
+  color: white;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+</style>
+
+<script>
+document.addEventListener("click", function(e) {
+  if (e.target.classList.contains("addon-add-btn")) {
+    const variantId = e.target.dataset.variant;
+
+    fetch('/cart/add.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: [{ id: variantId, quantity: 1 }] })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log("Add-on product added:", data);
+      // Optionally open cart drawer
+      document.querySelector('cart-drawer')?.open();
+    });
+  }
+});
+</script>

@@ -1,0 +1,29 @@
+<div class="page-width">
+  {% content_for 'blocks' %}
+</div>
+
+{% schema %}
+{
+  "name": "⚡️ Horizon Section",
+  "blocks": [
+    {
+      "type": "@theme"
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "Horizon wrapper section",
+      "info": "This section accepts global theme blocks and lets you use the AI block generator. Tutorial video: [youtube.com/watch]()"
+    }
+  ],
+  "presets": [
+    {
+      "name": "⚡️ Horizon Section"
+    }
+  ]
+}
+{% endschema %}
